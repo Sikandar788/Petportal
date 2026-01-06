@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "26343599080",
+    "project_id": "petpotal-d5fe6",
+    "storage_bucket": "petpotal-d5fe6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:26343599080:android:8737475494088db8d4125d",
+        "android_client_info": {
+          "package_name": "com.example.petportal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD5RhrNNYhn7QyrIeR9CiAYmBAFLtMwSak"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
