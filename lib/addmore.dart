@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:petportal/Loginhome.dart';
+import 'package:petportal/aboutscreen.dart';
+import 'package:petportal/contactscreen.dart';
 import 'package:petportal/dashboard.dart';
 import 'package:petportal/remainder.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class Addmore extends StatefulWidget {
   const Addmore({super.key});
@@ -10,7 +15,8 @@ class Addmore extends StatefulWidget {
 }
 
 class _AddmoreState extends State<Addmore> {
-  int currentIndex=4;
+  int currentIndex = 3;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,7 +27,6 @@ class _AddmoreState extends State<Addmore> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Back Button
               IconButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -31,7 +36,6 @@ class _AddmoreState extends State<Addmore> {
               ),
               const SizedBox(height: 10),
 
-              // Title and Subtitle
               const Center(
                 child: Column(
                   children: [
@@ -56,31 +60,34 @@ class _AddmoreState extends State<Addmore> {
               ),
               const SizedBox(height: 30),
 
-              // About Pet Portal
               _OptionCard(
                 icon: Icons.info_outline_rounded,
                 title: "About Pet Portal",
                 subtitle: "Learn about our mission and features",
                 iconColor: Colors.blueAccent,
                 onTap: () {
-                  // TODO: Navigate to About page
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => Aboutscreen()));
                 },
               ),
               const SizedBox(height: 16),
 
-              // Contact Support
               _OptionCard(
                 icon: Icons.phone_rounded,
                 title: "Contact Support",
                 subtitle: "Get help and send us feedback",
                 iconColor: Colors.amber,
                 onTap: () {
-                  // TODO: Navigate to Contact Support page
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => Contactscreen()));
                 },
               ),
               const SizedBox(height: 16),
 
-              // Account Settings
               _OptionCard(
                 icon: Icons.logout_rounded,
                 title: "Account Settings",
@@ -94,39 +101,70 @@ class _AddmoreState extends State<Addmore> {
                   ),
                 ),
                 onTap: () {
-                  // TODO: Add Sign Out functionality
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("Sign Out"),
+                      content: const Text(
+                          "Are you sure you want to sign out?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: const Text("Cancel"),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            await FirebaseAuth.instance.signOut();
+
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const Loginhome()),
+                              (route) => false,
+                            );
+                          },
+                          child: const Text(
+                            "Sign Out",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
                 },
               ),
             ],
           ),
         ),
       ),
-       bottomNavigationBar: BottomNavigationBar(
+      bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF0C6CF2),
         unselectedItemColor: Colors.grey,
         currentIndex: currentIndex,
         onTap: (index) {
-            setState(() {
-              currentIndex = index;
-            });
-            if(index==0){
-              Navigator.push(context, MaterialPageRoute(builder:(context) => DashboardScreen(),));
-            }else if(index==1){
-
-            }else if(index==2){
-              Navigator.push(context, MaterialPageRoute(builder:(context) => RemindersScreen(),));
-            }else if(index==3){
-
-            }else if(index==4){
-       
-            }
-            
+          setState(() {
+            currentIndex = index;
+          });
+          if (index == 0) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => DashboardScreen()));
+          }  else if (index == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (context) => RemindersScreen()));
+          } else if (index == 2) {
+            // Your Chat screen navigation (if exists)
+          } else if (index == 3) {
+            // Already on More screen
+          }
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.pets), label: 'Pets'),
-          BottomNavigationBarItem(icon: Icon(Icons.health_and_safety), label: 'Health'),
+         
+          BottomNavigationBarItem(
+              icon: Icon(Icons.health_and_safety), label: 'Health'),
           BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'More'),
         ],
@@ -135,7 +173,6 @@ class _AddmoreState extends State<Addmore> {
   }
 }
 
-// Reusable Option Card Widget
 class _OptionCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -174,7 +211,6 @@ class _OptionCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
           child: Row(
             children: [
-              // Icon Container
               Container(
                 height: 42,
                 width: 42,
@@ -185,8 +221,6 @@ class _OptionCard extends StatelessWidget {
                 child: Icon(icon, color: iconColor, size: 22),
               ),
               const SizedBox(width: 14),
-
-              // Title and Subtitle
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -210,8 +244,6 @@ class _OptionCard extends StatelessWidget {
                   ],
                 ),
               ),
-
-              // Trailing Arrow or Text (like “Sign Out”)
               trailing ??
                   const Icon(
                     Icons.arrow_forward_ios_rounded,

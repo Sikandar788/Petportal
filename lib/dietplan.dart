@@ -114,6 +114,7 @@ class _DietPlanState extends State<DietPlan> {
                               ],
                             ),
                           ),
+                          SizedBox(height: 14),
                           const Text(
                             "900 kcal",
                             style: TextStyle(fontWeight: FontWeight.bold),
@@ -122,7 +123,7 @@ class _DietPlanState extends State<DietPlan> {
                       ),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 19),
 
                     // 🧾 LEGENDS
                     Row(

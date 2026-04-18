@@ -1,0 +1,88 @@
+{
+  "diet_plans": {
+    "dog": {
+      "puppy": {
+        "small_puppy": {
+          "title": "Small Puppy Growth",
+          "min_age_months": 0,
+          "max_age_months": 6,
+          "weight_min_kg": 0,
+          "weight_max_kg": 5,
+          "calories_per_day": 350,
+          "meals": [
+            {"name": "Breakfast", "food": "Puppy kibble", "amount": "40g", "kcal": 150},
+            {"name": "Dinner", "food": "Wet puppy food", "amount": "50g", "kcal": 200}
+          ]
+        },
+        "medium_puppy": {
+          "title": "Medium Puppy Growth",
+          "min_age_months": 6,
+          "max_age_months": 12,
+          "weight_min_kg": 5,
+          "weight_max_kg": 15,
+          "calories_per_day": 500,
+          "meals": [
+            {"name": "Breakfast", "food": "Puppy kibble", "amount": "80g", "kcal": 250},
+            {"name": "Dinner", "food": "Wet puppy food", "amount": "100g", "kcal": 250}
+          ]
+        }
+      },
+      "adult": {
+        "small_adult": {
+          "title": "Small Dog Maintenance",
+          "min_age_years": 1,
+          "max_age_years": 7,
+          "weight_min_kg": 1,
+          "weight_max_kg": 10,
+          "calories_per_day": 400,
+          "meals": [
+            {"name": "Breakfast", "food": "Adult kibble", "amount": "80g", "kcal": 200},
+            {"name": "Dinner", "food": "Cooked chicken", "amount": "90g", "kcal": 200}
+          ]
+        },
+        "large_adult": {
+          "title": "Large Dog Maintenance",
+          "min_age_years": 1,
+          "max_age_years": 8,
+          "weight_min_kg": 11,
+          "weight_max_kg": 40,
+          "calories_per_day": 900,
+          "meals": [
+            {"name": "Breakfast", "food": "Adult kibble", "amount": "200g", "kcal": 450},
+            {"name": "Dinner", "food": "Cooked meat + rice", "amount": "200g", "kcal": 450}
+          ]
+        }
+      }
+    },
+    "cat": {
+      "kitten": {
+        "kitten_small": {
+          "title": "Kitten Growth Plan",
+          "min_age_months": 0,
+          "max_age_months": 9,
+          "weight_min_kg": 0,
+          "weight_max_kg": 3,
+          "calories_per_day": 300,
+          "meals": [
+            {"name": "Breakfast", "food": "Kitten kibble", "amount": "25g", "kcal": 140},
+            {"name": "Dinner", "food": "Wet kitten food", "amount": "30g", "kcal": 160}
+          ]
+        }
+      },
+      "adult": {
+        "adult_cat": {
+          "title": "Adult Cat Maintenance",
+          "min_age_years": 1,
+          "max_age_years": 12,
+          "weight_min_kg": 3,
+          "weight_max_kg": 6,
+          "calories_per_day": 260,
+          "meals": [
+            {"name": "Breakfast", "food": "Adult cat kibble", "amount": "40g", "kcal": 130},
+            {"name": "Dinner", "food": "Canned fish", "amount": "45g", "kcal": 130}
+          ]
+        }
+      }
+    }
+  }
+}

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:petportal/splashscreen.dart';
+import 'notification_service.dart';
+
 
 
 Future<void> main() async {
@@ -11,7 +13,9 @@ Future<void> main() async {
 
  await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-); // Firebase initialized here
+);
+await NotificationService.init();
+ // Firebase initialized here
 
   runApp(const MyApp());
 }

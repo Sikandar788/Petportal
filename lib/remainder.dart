@@ -1,5 +1,10 @@
-
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'addremainder.dart';
+import 'loginscreen.dart';
+import 'dashboard.dart';
+import 'addmore.dart';
 
 class RemindersScreen extends StatefulWidget {
   const RemindersScreen({super.key});
@@ -9,58 +14,91 @@ class RemindersScreen extends StatefulWidget {
 }
 
 class _RemindersScreenState extends State<RemindersScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+
+  int _currentIndex = 1; // Health screen selected by default
+
+  void deleteReminder(String reminderKey) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    await _database
+        .child("reminders")
+        .child(user.uid)
+        .child(reminderKey)
+        .remove();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Reminder deleted successfully"),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  Map<dynamic, dynamic> _mapFromSnapshot(Object? value) {
+    if (value == null) return {};
+    if (value is Map) return Map<dynamic, dynamic>.from(value);
+    try {
+      return Map<dynamic, dynamic>.from(value as Map);
+    } catch (e) {
+      return {};
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      return Scaffold(
+        body: const Center(child: Text("User not logged in")),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7),
 
-      // ✅ UPDATED APPBAR
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: PopupMenuButton<String>(
-          icon: const Icon(Icons.menu, color: Colors.black),
-          itemBuilder: (context) => [
-            const PopupMenuItem(value: 'profile', child: Text('Profile')),
-            const PopupMenuItem(value: 'settings', child: Text('Settings')),
-            const PopupMenuItem(value: 'logout', child: Text('Logout')),
-          ],
-        ),
         title: const Text(
           "Pet Portal",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600),
         ),
       ),
 
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
-            // ✅ HEALTH REMINDER TITLE + ADD BUTTON
+            // Title + Add Button
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text(
                   "Health Reminders",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 TextButton.icon(
                   style: TextButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: const Color(0xFF0C6CF2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: () async {
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AddReminderPage(),
+                      ),
+                    );
+                    setState(() {});
+                  },
                   icon: const Icon(Icons.add, color: Colors.white, size: 18),
                   label: const Text(
                     "Add",
@@ -70,73 +108,123 @@ class _RemindersScreenState extends State<RemindersScreen> {
               ],
             ),
 
-            const SizedBox(height: 6),
+            const SizedBox(height: 10),
 
-            // ✅ TRACK TEXT BELOW
-            const Text(
-              "Track vaccination and healthcare schedules",
-              style: TextStyle(color: Colors.grey),
-            ),
+            // Reminder Count
+            StreamBuilder<DatabaseEvent>(
+              stream: _database.child("reminders").child(user.uid).onValue,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData ||
+                    snapshot.data!.snapshot.value == null) {
+                  return const Text("Upcoming (0)",
+                      style: TextStyle(fontWeight: FontWeight.bold));
+                }
 
-            const SizedBox(height: 20),
+                final reminders =
+                    _mapFromSnapshot(snapshot.data!.snapshot.value);
 
-            Row(
-              children: const [
-                Icon(Icons.notifications, size: 18),
-                SizedBox(width: 6),
-                Text(
-                  "Upcoming (3)",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
+                return Text(
+                  "Upcoming (${reminders.length})",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                );
+              },
             ),
 
             const SizedBox(height: 12),
 
-            _reminderCard(),
-            _reminderCard(),
-            _reminderCard(),
+            // Reminder List
+            Expanded(
+              child: StreamBuilder<DatabaseEvent>(
+                stream:
+                    _database.child("reminders").child(user.uid).onValue,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator());
+                  }
 
-            const SizedBox(height: 20),
+                  if (!snapshot.hasData ||
+                      snapshot.data!.snapshot.value == null) {
+                    return const Center(
+                        child: Text("No reminders added yet"));
+                  }
 
-            Row(
-              children: const [
-                Icon(Icons.favorite, size: 18),
-                SizedBox(width: 6),
-                Text(
-                  "Health Tips",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+                  final reminders =
+                      _mapFromSnapshot(snapshot.data!.snapshot.value);
 
-            const SizedBox(height: 10),
+                  List<Map<dynamic, dynamic>> reminderList = [];
+                  reminders.forEach((key, value) {
+                    if (value is Map) {
+                      reminderList.add({
+                        "key": key,
+                        ...Map<dynamic, dynamic>.from(value),
+                      });
+                    }
+                  });
 
-            _tipCard(
-              title: "Vaccination Schedule",
-              description:
-                  "Puppies need vaccinations at 6-8 weeks, 10-12 weeks, and 14-16 weeks.\nAdult dogs need boosters.",
-            ),
-
-            _tipCard(
-              title: "Deworming",
-              description:
-                  "Deworm puppies every 2-3 weeks until 6 months old, then every 3-6 months for adult dogs.",
-            ),
-
-            _tipCard(
-              title: "Regular Checkups",
-              description:
-                  "Annual health checkups help detect issues early. Senior pets (7+ years) should see the vet twice yearly.",
+                  return ListView.builder(
+                    itemCount: reminderList.length,
+                    itemBuilder: (context, index) {
+                      final reminder = reminderList[index];
+                      return _reminderCard(reminder);
+                    },
+                  );
+                },
+              ),
             ),
           ],
         ),
       ),
+
+      // 🔵 Bottom Navigation Bar
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: _currentIndex,
+        selectedItemColor: const Color(0xFF0C6CF2),
+        unselectedItemColor: Colors.grey,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+
+          if (index == 0) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const DashboardScreen()),
+            );
+          } else if (index == 1) {
+            // Already on Health
+          } else if (index == 2) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const ChatPlaceholderScreen()),
+            );
+          } else if (index == 3) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const Addmore()),
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.home), label: "Home"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.health_and_safety), label: "Health"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.chat), label: "Chatbot"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.person), label: "More"),
+        ],
+      ),
     );
   }
 
-  // 🔔 REMINDER CARD
-  static Widget _reminderCard() {
+  Widget _reminderCard(Map reminder) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -145,85 +233,52 @@ class _RemindersScreenState extends State<RemindersScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Icon(Icons.medical_services, color: Colors.redAccent),
-
           const SizedBox(width: 10),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  "Annual vaccination",
-                  style: TextStyle(fontWeight: FontWeight.w600),
+                Text(
+                  reminder["title"] ?? "",
+                  style:
+                      const TextStyle(fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 4),
-                const Text(
-                  "DHPP, Rabies vaccination due",
-                  style: TextStyle(fontSize: 13),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.calendar_today, size: 14),
-                    const SizedBox(width: 4),
-                    const Text(
-                      "14/01/2025",
-                      style: TextStyle(fontSize: 12),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        "247 days overdue",
-                        style: TextStyle(
-                            color: Colors.white, fontSize: 11),
-                      ),
-                    ),
-                  ],
-                ),
+                Text(reminder["petName"] ?? ""),
+                Text(reminder["date"] ?? "",
+                    style: const TextStyle(fontSize: 12)),
               ],
             ),
           ),
-
-          const Icon(Icons.check_circle, color: Colors.blue),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () {
+              deleteReminder(reminder["key"]);
+            },
+          ),
         ],
       ),
     );
   }
+}
 
-  // 💡 HEALTH TIP CARD
-  static Widget _tipCard({
-    required String title,
-    required String description,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE6F3FF),
-        borderRadius: BorderRadius.circular(12),
+// Temporary Chatbot Screen
+class ChatPlaceholderScreen extends StatelessWidget {
+  const ChatPlaceholderScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Chatbot"),
+        backgroundColor: const Color(0xFF0C6CF2),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            description,
-            style: const TextStyle(fontSize: 13),
-          ),
-        ],
+      body: const Center(
+        child: Text(
+          "Chatbot Coming Soon...",
+          style: TextStyle(fontSize: 18),
+        ),
       ),
     );
   }

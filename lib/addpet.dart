@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:petportal/petform.dart';
 
 class Addpet extends StatefulWidget {
@@ -9,6 +11,25 @@ class Addpet extends StatefulWidget {
 }
 
 class _PetProfilesScreenState extends State<Addpet> {
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // 🗑 Delete Function
+  void deletePet(String petKey) async {
+    await _database
+        .child("pets")
+        .child(_auth.currentUser!.uid)
+        .child(petKey)
+        .remove();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Pet deleted successfully"),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -19,7 +40,6 @@ class _PetProfilesScreenState extends State<Addpet> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 🔙 Back button
               IconButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -28,7 +48,7 @@ class _PetProfilesScreenState extends State<Addpet> {
               ),
               const SizedBox(height: 8),
 
-              // 🐶 Title and Add Button Row
+              // 🐶 Title and Add Button
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -51,39 +71,116 @@ class _PetProfilesScreenState extends State<Addpet> {
                   ),
                   ElevatedButton.icon(
                     onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder:(context) => Petform(),));
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const Petform()),
+                      );
                     },
-                    icon: const Icon(Icons.add, color: Colors.white, size: 18),
+                    icon:
+                        const Icon(Icons.add, color: Colors.white, size: 18),
                     label: const Text(
                       'Add Pet',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                      style:
+                          TextStyle(color: Colors.white, fontSize: 14),
                     ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0C6CF2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 8),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
 
-              // 🐕 Pet Cards
+              // 🔥 REALTIME DATABASE FETCH
               Expanded(
-                child: ListView(
-                  children: [
-                    _petCard('assets/images/pin.png', 'Max', 'Golden Retriever',
-                        '3 years old', 'Need attention'),
-                    const SizedBox(height: 16),
-                    _petCard('assets/images/pin.png', 'Max', 'Golden Retriever',
-                        '3 years old', 'Need attention'),
-                    const SizedBox(height: 16),
-                    _petCard('assets/images/pin.png', 'Max', 'Golden Retriever',
-                        '3 years old', 'Need attention'),
-                  ],
+                child: StreamBuilder<DatabaseEvent>(
+                  stream: _database
+                      .child("pets")
+                      .child(_auth.currentUser!.uid)
+                      .onValue,
+                  builder: (context, snapshot) {
+
+                      // 🟡 Loading State
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(),
+                        );
+                      }
+
+                      // 🔴 Error State
+                      if (snapshot.hasError) {
+                        print('Realtime DB snapshot error (pets): ${snapshot.error}');
+                        return const Center(
+                          child: Text("Something went wrong"),
+                        );
+                      }
+
+                      // 🐾 No Data
+                      if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
+                        return const Center(
+                          child: Text("No pets added yet 🐾"),
+                        );
+                      }
+
+                      final user = _auth.currentUser;
+                      if (user == null) {
+                        print('No authenticated user while fetching pets');
+                        return const Center(child: Text("Please log in to see pets"));
+                      }
+
+                      Map<dynamic, dynamic> pets = {};
+                      try {
+                        final raw = snapshot.data!.snapshot.value;
+                        if (raw is Map) {
+                          pets = Map<dynamic, dynamic>.from(raw);
+                        } else {
+                          print('Unexpected pets snapshot type: ${raw.runtimeType}');
+                        }
+                      } catch (e, st) {
+                        print('Error parsing pets snapshot: $e\n$st');
+                      }
+
+                      List<Map<dynamic, dynamic>> petList = [];
+
+                      pets.forEach((key, value) {
+                        if (value is Map) {
+                          petList.add({
+                            "key": key,
+                            ...Map<dynamic, dynamic>.from(value),
+                          });
+                        } else {
+                          print('Skipping pet entry $key with non-map value: ${value.runtimeType}');
+                        }
+                      });
+
+                    return ListView.builder(
+                      itemCount: petList.length,
+                      itemBuilder: (context, index) {
+                        final pet = petList[index];
+
+                        return Column(
+                          children: [
+                            _petCard(
+                              'assets/images/pin.png',
+                              pet["name"] ?? "",
+                              pet["breed"] ?? "",
+                              "${pet["age"] ?? 0} years old",
+                              pet["gender"] ?? "",
+                              pet["key"],
+                              pet,
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ],
@@ -93,8 +190,16 @@ class _PetProfilesScreenState extends State<Addpet> {
     );
   }
 
-  // 🐾 Pet Card Widget
-  Widget _petCard(String image, String name, String breed, String age, String vaccStatus) {
+  // 🐾 Pet Card
+  Widget _petCard(
+    String image,
+    String name,
+    String breed,
+    String age,
+    String vaccStatus,
+    String petKey,
+    Map petData,
+  ) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -110,7 +215,6 @@ class _PetProfilesScreenState extends State<Addpet> {
       ),
       child: Column(
         children: [
-          // First Row: Image + Name + Edit/Delete Icons
           Row(
             children: [
               CircleAvatar(
@@ -121,7 +225,8 @@ class _PetProfilesScreenState extends State<Addpet> {
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
                     Text(
                       name,
@@ -132,46 +237,95 @@ class _PetProfilesScreenState extends State<Addpet> {
                     ),
                     Text(
                       breed,
-                      style: const TextStyle(color: Colors.grey),
+                      style:
+                          const TextStyle(color: Colors.grey),
                     ),
                   ],
                 ),
               ),
               Row(
                 children: [
-                  _iconButton(Icons.edit_outlined, Colors.blueAccent, () {}),
+                  // ✏ EDIT
+                  _iconButton(Icons.edit_outlined,
+                      Colors.blueAccent, () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => Petform(
+                          // Add edit logic in Petform using petData & petKey
+                        ),
+                      ),
+                    );
+                  }),
                   const SizedBox(width: 6),
-                  _iconButton(Icons.delete_outline, Colors.redAccent, () {}),
+
+                  // 🗑 DELETE
+                  _iconButton(Icons.delete_outline,
+                      Colors.redAccent, () {
+                    showDialog(
+                      context: context,
+                      builder: (context) =>
+                          AlertDialog(
+                        title:
+                            const Text("Delete Pet"),
+                        content: const Text(
+                            "Are you sure you want to delete this pet?"),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.pop(
+                                    context),
+                            child:
+                                const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              deletePet(petKey);
+                              Navigator.pop(
+                                  context);
+                            },
+                            child:
+                                const Text("Delete"),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
                 ],
               )
             ],
           ),
           const SizedBox(height: 10),
 
-          // Second Row: Age and Vaccination info
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
+            mainAxisAlignment:
+                MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
                 'Age',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+                style: TextStyle(
+                    color: Colors.grey, fontSize: 13),
               ),
-              const Text(
-                'Vaccination',
-                style: TextStyle(color: Colors.grey, fontSize: 13),
+              Text(
+                'Gender',
+                style: TextStyle(
+                    color: Colors.grey, fontSize: 13),
               ),
             ],
           ),
           const SizedBox(height: 2),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment:
+                MainAxisAlignment.spaceBetween,
             children: [
               Text(age,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w500, fontSize: 14)),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14)),
               Text(vaccStatus,
                   style: const TextStyle(
-                      fontWeight: FontWeight.w500, fontSize: 14)),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14)),
             ],
           ),
         ],
@@ -179,8 +333,8 @@ class _PetProfilesScreenState extends State<Addpet> {
     );
   }
 
-  // ✏️ Reusable small icon button
-  Widget _iconButton(IconData icon, Color color, VoidCallback onTap) {
+  Widget _iconButton(
+      IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -189,7 +343,8 @@ class _PetProfilesScreenState extends State<Addpet> {
           color: color.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
-        child: Icon(icon, size: 18, color: color),
+        child: Icon(icon,
+            size: 18, color: color),
       ),
     );
   }

@@ -88,7 +88,7 @@ class _ViewpetState extends State<Viewpet> {
 
                       // Subtext
                       const Text(
-                        "🎉 Congratulations! Your pet profile has been created.\nClick continue to explore.",
+                        "🎉 Congratulations! Your pet profile has been created..",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 15,
@@ -99,33 +99,8 @@ class _ViewpetState extends State<Viewpet> {
                       const SizedBox(height: 40),
 
                       // Button with gradient
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4169E1),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
-                            ),
-                            elevation: 6,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shadowColor: const Color(0xFF4169E1).withOpacity(0.4),
-                          ),
-                          onPressed: () {
-                            // TODO: Navigate to Reminder screen
-                          },
-                          child: const Text(
-                            "View My Reminder",
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
+                      
+                      
                     ],
                   ),
                 ),
